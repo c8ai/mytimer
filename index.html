@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>精準倒計時器 (按鈕動態切換版)</title>
+    <title>精準倒計時器 (本地音效版)</title>
     <style>
         body {
             font-family: "Microsoft JhengHei", sans-serif;
@@ -13,14 +13,15 @@
         }
         .settings-bar {
             background: white;
-            padding: 10px 20px;
+            padding: 15px 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
+            flex-wrap: wrap;
         }
         #timer-container {
             display: flex;
@@ -47,12 +48,10 @@
             background-color: #ffecec !important;
             border-color: #ffcfcf !important;
         }
-        /* 倒數中：隱藏輸入框與開始按鈕 */
         .timer-running .input-group,
         .timer-running .btn-start {
             display: none;
         }
-        /* 未開始時：隱藏數字顯示與停止按鈕 */
         .timer-card:not(.timer-running) .display,
         .timer-card:not(.timer-running) .btn-stop {
             display: none;
@@ -84,7 +83,6 @@
             margin: 5px 0;
             color: #d63031;
         }
-        /* 按鈕基礎樣式 */
         .btn {
             padding: 10px 20px;
             border: none;
@@ -95,18 +93,19 @@
             margin-top: 10px;
             transition: 0.2s;
         }
-        .btn-start {
-            background-color: #2ecc71;
-            color: white;
-        }
+        .btn-start { background-color: #2ecc71; color: white; }
         .btn-start:hover { background-color: #27ae60; }
-        .btn-stop {
-            background-color: #636e72;
-            color: white;
-        }
+        .btn-stop { background-color: #636e72; color: white; }
         .btn-stop:hover { background-color: #2d3436; }
+        .btn-test {
+            background-color: #3498db;
+            color: white;
+            font-size: 14px;
+            padding: 5px 12px;
+            margin-top: 0;
+        }
+        .btn-test:hover { background-color: #2980b9; }
 
-        /* 開關樣式 */
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
@@ -124,11 +123,12 @@
         <span class="slider"></span>
     </label>
     <span id="sound-status">關閉</span>
+    <button class="btn btn-test" onclick="playTestSound()">🔊 音效測試 (1.mp3)</button>
 </div>
 
 <div id="timer-container"></div>
 
-<audio id="alert-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+<audio id="alert-sound" src="1.mp3"></audio>
 
 <script>
     const timerNames = ["勞動檢處", "昇陽", "溪頭公園", "聖天宮", "鎮天宮", "welcome", "浪極光", "拱門天橋"];
@@ -145,10 +145,18 @@
         document.getElementById('sound-status').innerText = soundEnabled ? "開啟" : "關閉";
     }
 
+    function playTestSound() {
+        const audio = document.getElementById('alert-sound');
+        audio.currentTime = 0;
+        audio.play().catch(e => {
+            console.error(e);
+            alert("播放失敗！請檢查資料夾內是否有 1.mp3 檔案，且瀏覽器已允許自動播放。");
+        });
+    }
+
     timerNames.forEach((name, i) => {
         const savedInput = JSON.parse(localStorage.getItem(`timer_input_${i}`)) || { min: "00", sec: "00" };
         const savedEndTime = localStorage.getItem(`timer_endtime_${i}`);
-
         const card = document.createElement('div');
         card.className = 'timer-card';
         card.id = `card-${i}`;
@@ -183,7 +191,6 @@
         };
 
         container.appendChild(card);
-
         timers[i] = { 
             name: name, 
             endTime: endTime, 
@@ -191,7 +198,6 @@
             remaining: isRunning ? Math.ceil((endTime - now) / 1000) : 0, 
             alerted: false 
         };
-        
         if(isRunning) updateDisplayValue(i);
     });
 
@@ -233,16 +239,12 @@
         const secInp = document.getElementById(`sec-${i}`);
         let m = parseInt(minInp.value) || 0;
         let s = parseInt(secInp.value) || 0;
-        
         const totalMs = ((m + 5) * 60 + s) * 1000;
         const endTime = Date.now() + totalMs;
-        
         timers[i].endTime = endTime;
         timers[i].isRunning = true;
         timers[i].alerted = false;
-        
         localStorage.setItem(`timer_endtime_${i}`, endTime);
-        
         document.getElementById(`card-${i}`).classList.add('timer-running');
         document.activeElement.blur();
         sortCards();
@@ -255,7 +257,6 @@
         timers[i].alerted = false;
         localStorage.removeItem(`timer_endtime_${i}`);
         document.getElementById(`card-${i}`).classList.remove('timer-running');
-        document.getElementById(`disp-${i}`).innerText = "00:00";
         sortCards();
     }
 
@@ -275,7 +276,6 @@
         const now = Date.now();
         let shortestTimer = null;
         let needsSort = false;
-
         for (let i in timers) {
             if (timers[i].isRunning) {
                 const diff = timers[i].endTime - now;
@@ -285,8 +285,7 @@
                 } else {
                     const newRemaining = Math.ceil(diff / 1000);
                     if (soundEnabled && newRemaining === 60 && !timers[i].alerted) {
-                        const audio = document.getElementById('alert-sound');
-                        audio.play().catch(()=>{});
+                        document.getElementById('alert-sound').play().catch(()=>{});
                         timers[i].alerted = true;
                     }
                     if (newRemaining !== timers[i].remaining) {
@@ -301,7 +300,6 @@
             }
         }
         if (needsSort) sortCards();
-
         if (shortestTimer) {
             let m = Math.floor(shortestTimer.remaining / 60);
             let s = shortestTimer.remaining % 60;
