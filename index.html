@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精準倒計時器 (自動記憶版)</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+            margin: 0;
+        }
+        #timer-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .timer-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 280px;
+            min-height: 220px;
+            text-align: center;
+            transition: transform 0.3s ease, background-color 0.3s;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .timer-running {
+            background-color: #ffecec !important;
+            border-color: #ffcfcf !important;
+        }
+        .timer-running .input-group {
+            display: none;
+        }
+        h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.4em;
+            color: #333;
+        }
+        .input-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        input[type="number"] {
+            width: 70px;
+            font-size: 28px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 5px;
+        }
+        .display {
+            font-size: 60px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 5px 0;
+            color: #d63031;
+        }
+        .btn-stop {
+            padding: 8px 20px;
+            background-color: #636e72;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="timer-container"></div>
+
+<script>
+    const timerNames = ["勞動檢處", "昇陽", "溪頭公園", "聖天宮", "鎮天宮", "welcome", "浪極光", "拱門天橋"];
+    let timers = {}; 
+    const container = document.getElementById('timer-container');
+
+    // 初始化介面與載入緩存數據
+    timerNames.forEach((name, i) => {
+        // 從 localStorage 讀取舊數據
+        const savedData = JSON.parse(localStorage.getItem(`timer_cache_${i}`)) || { min: "00", sec: "00" };
+
+        const card = document.createElement('div');
+        card.className = 'timer-card';
+        card.id = `card-${i}`;
+        card.innerHTML = `
+            <h3>${name}</h3>
+            <div class="input-group">
+                <input type="number" id="min-${i}" placeholder="分" value="${savedData.min}" oninput="limitAndSave(${i}, 'min', 3)">
+                <span>:</span>
+                <input type="number" id="sec-${i}" placeholder="秒" value="${savedData.sec}" oninput="limitAndSave(${i}, 'sec', 2)">
+            </div>
+            <div class="display" id="disp-${i}">00:00</div>
+            <button class="btn-stop" onclick="event.stopPropagation(); stopTimer(${i});">停止</button>
+        `;
+        
+        card.onclick = function() {
+            if (!timers[i].isRunning) {
+                const minInp = document.getElementById(`min-${i}`);
+                minInp.focus();
+                minInp.select();
+            }
+        };
+
+        container.appendChild(card);
+        timers[i] = { name: name, endTime: null, isRunning: false, remaining: 0 };
+    });
+
+    // 輸入限制並存檔
+    function limitAndSave(index, type, maxLen) {
+        const input = document.getElementById(`${type}-${index}`);
+        if (input.value.length > maxLen) {
+            input.value = input.value.slice(0, maxLen);
+        }
+        
+        // 存入 localStorage
+        const minVal = document.getElementById(`min-${index}`).value;
+        const secVal = document.getElementById(`sec-${index}`).value;
+        localStorage.setItem(`timer_cache_${index}`, JSON.stringify({ min: minVal, sec: secVal }));
+
+        // 如果是分鐘輸滿兩位，自動跳秒
+        if (type === 'min' && input.value.length >= 2) {
+            document.getElementById(`sec-${index}`).focus();
+            document.getElementById(`sec-${index}`).select();
+        }
+    }
+
+    window.onload = function() {
+        timerNames.forEach((_, i) => {
+            const minInp = document.getElementById(`min-${i}`);
+            const secInp = document.getElementById(`sec-${i}`);
+
+            minInp.onfocus = () => minInp.select();
+            secInp.onfocus = () => secInp.select();
+
+            const handleEnter = (e) => { if (e.key === 'Enter') startWithExtra(i); };
+            secInp.addEventListener('keypress', handleEnter);
+            minInp.addEventListener('keypress', handleEnter);
+        });
+        sortCards(); // 載入後先排一次
+    };
+
+    function startWithExtra(i) {
+        const minInp = document.getElementById(`min-${i}`);
+        const secInp = document.getElementById(`sec-${i}`);
+        
+        let m = parseInt(minInp.value) || 0;
+        let s = parseInt(secInp.value) || 0;
+        
+        const totalMs = ((m + 5) * 60 + s) * 1000;
+        timers[i].endTime = Date.now() + totalMs;
+        timers[i].isRunning = true;
+        
+        document.getElementById(`card-${i}`).classList.add('timer-running');
+        document.activeElement.blur();
+        sortCards();
+    }
+
+    function stopTimer(i) {
+        timers[i].isRunning = false;
+        timers[i].endTime = null;
+        timers[i].remaining = 0;
+        document.getElementById(`card-${i}`).classList.remove('timer-running');
+        document.getElementById(`disp-${i}`).innerText = "00:00";
+        sortCards();
+    }
+
+    function sortCards() {
+        const cards = Array.from(container.children);
+        cards.sort((a, b) => {
+            const idA = parseInt(a.id.split('-')[1]);
+            const idB = parseInt(b.id.split('-')[1]);
+            const tA = timers[idA].isRunning ? timers[idA].remaining : Infinity;
+            const tB = timers[idB].isRunning ? timers[idB].remaining : Infinity;
+            return tA - tB;
+        });
+        cards.forEach((card, index) => {
+            card.style.order = index; 
+        });
+    }
+
+    // 主循環
+    setInterval(() => {
+        const now = Date.now();
+        let shortestTimer = null;
+        let needsSort = false;
+
+        for (let i in timers) {
+            if (timers[i].isRunning) {
+                const diff = timers[i].endTime - now;
+                if (diff <= 0) {
+                    stopTimer(i);
+                    needsSort = true;
+                } else {
+                    const newRemaining = Math.ceil(diff / 1000);
+                    if (newRemaining !== timers[i].remaining) {
+                        timers[i].remaining = newRemaining;
+                        let m = Math.floor(timers[i].remaining / 60);
+                        let s = timers[i].remaining % 60;
+                        document.getElementById(`disp-${i}`).innerText = 
+                            `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                        needsSort = true;
+                    }
+                    if (!shortestTimer || timers[i].remaining < shortestTimer.remaining) {
+                        shortestTimer = timers[i];
+                    }
+                }
+            }
+        }
+
+        if (needsSort) sortCards();
+
+        if (shortestTimer) {
+            let m = Math.floor(shortestTimer.remaining / 60);
+            let s = shortestTimer.remaining % 60;
+            document.title = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} - ${shortestTimer.name}`;
+        } else {
+            document.title = "精準倒計時器";
+        }
+    }, 500);
+
+</script>
+
+</body>
+</html>
