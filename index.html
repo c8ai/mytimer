@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>精準倒計時器 (多重音效獨立控管版)</title>
+    <title>精準倒計時器 (自動跳轉優化版)</title>
     <style>
         body {
             font-family: "Microsoft JhengHei", sans-serif;
@@ -109,7 +109,7 @@
         audio.play().catch(() => alert("播放失敗！請確認資料夾內是否有 1.mp3"));
     }
 
-    // 初始化
+    // 初始化區塊
     timerNames.forEach((name, i) => {
         const savedInput = JSON.parse(localStorage.getItem(`timer_input_${i}`)) || { min: "00", sec: "00" };
         const savedEndTime = localStorage.getItem(`timer_endtime_${i}`);
@@ -129,7 +129,7 @@
         card.innerHTML = `
             <h3>${name}</h3>
             <div class="input-group">
-                <input type="number" id="min-${i}" value="${savedInput.min}" oninput="limitAndSave(${i}, 'min', 3)">
+                <input type="number" id="min-${i}" value="${savedInput.min}" oninput="limitAndSave(${i}, 'min', 2)">
                 <span>:</span>
                 <input type="number" id="sec-${i}" value="${savedInput.sec}" oninput="limitAndSave(${i}, 'sec', 2)">
             </div>
@@ -151,7 +151,7 @@
             endTime: endTime, 
             isRunning: isRunning, 
             remaining: isRunning ? Math.ceil((endTime - now) / 1000) : 0, 
-            alerted: false // 每個計時器獨立的音效播放紀錄
+            alerted: false 
         };
         if(isRunning) updateDisplayValue(i);
     });
@@ -166,7 +166,19 @@
 
     function limitAndSave(index, type, maxLen) {
         const input = document.getElementById(`${type}-${index}`);
-        if (input.value.length > maxLen) input.value = input.value.slice(0, maxLen);
+        
+        // 限制字數
+        if (input.value.length > maxLen) {
+            input.value = input.value.slice(0, maxLen);
+        }
+
+        // 自動跳轉邏輯：如果在「分」輸入滿 2 碼，自動跳到「秒」
+        if (type === 'min' && input.value.length === 2) {
+            const secInput = document.getElementById(`sec-${index}`);
+            secInput.focus();
+            secInput.select();
+        }
+
         const minVal = document.getElementById(`min-${index}`).value;
         const secVal = document.getElementById(`sec-${index}`).value;
         localStorage.setItem(`timer_input_${index}`, JSON.stringify({ min: minVal, sec: secVal }));
@@ -175,11 +187,12 @@
     function startTimer(i) {
         const m = parseInt(document.getElementById(`min-${i}`).value) || 0;
         const s = parseInt(document.getElementById(`sec-${i}`).value) || 0;
+        // 開始時自動加 5 分鐘
         const endTime = Date.now() + ((m + 5) * 60 + s) * 1000;
         
         timers[i].endTime = endTime;
         timers[i].isRunning = true;
-        timers[i].alerted = false; // 重置此計時器的提醒標記
+        timers[i].alerted = false; 
         
         localStorage.setItem(`timer_endtime_${i}`, endTime);
         document.getElementById(`card-${i}`).classList.add('timer-running');
@@ -206,6 +219,18 @@
         cards.forEach((card, index) => card.style.order = index);
     }
 
+    window.onload = function() {
+        timerNames.forEach((_, i) => {
+            const minInp = document.getElementById(`min-${i}`);
+            const secInp = document.getElementById(`sec-${i}`);
+            // 綁定 Enter 鍵直接開始
+            const handleEnter = (e) => { if (e.key === 'Enter') startTimer(i); };
+            minInp.addEventListener('keypress', handleEnter);
+            secInp.addEventListener('keypress', handleEnter);
+        });
+        sortCards();
+    };
+
     setInterval(() => {
         const now = Date.now();
         let shortest = null;
@@ -220,12 +245,12 @@
                 } else {
                     const rem = Math.ceil(diff / 1000);
                     
-                    // 獨立音效檢查：當該計時器剛好剩 60 秒且尚未在此輪倒數播放過時
+                    // 剩 1 分鐘音效提醒
                     if (soundEnabled && rem === 60 && !timers[i].alerted) {
                         const audio = document.getElementById('alert-sound');
                         audio.currentTime = 0;
                         audio.play().catch(()=>{});
-                        timers[i].alerted = true; // 標記此計時器已播放
+                        timers[i].alerted = true;
                     }
 
                     if (rem !== timers[i].remaining) {
