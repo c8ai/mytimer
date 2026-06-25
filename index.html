@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>精準倒計時器 (四群組分類版)</title>
+    <title>精準倒計時器 (緊湊防捲軸版)</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="倒計時器">
@@ -18,10 +18,10 @@
         /* 頂部設定欄 */
         .settings-bar {
             background: white;
-            padding: 15px 20px;
+            padding: 12px 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -29,34 +29,45 @@
             flex-wrap: wrap;
         }
         
-        /* 四個群組的主容器網格 */
+        /* 群組主容器網格 */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            gap: 15px;
         }
-        @media (max-width: 900px) {
-            .grid-container {
-                grid-template-columns: 1fr; /* 手機版自動切換為單欄，方便滑動 */
-            }
-        }
-
+        
         /* 獨立群組區塊 */
         .group-box {
             background: #e4e7eb;
             border-radius: 15px;
-            padding: 15px;
+            padding: 12px;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
         }
-        /* 四個群組各自不同的淡色邊框，增加辨識度 */
+        
+        /* 讓第五個群組（環河）在滿版時橫跨兩欄，置於最下方 */
+        .group-box.bottom-full {
+            grid-column: span 2;
+            border-top: 5px solid #1abc9c;
+        }
+
+        @media (max-width: 900px) {
+            .grid-container {
+                grid-template-columns: 1fr; /* 手機版自動切換為單欄 */
+            }
+            .group-box.bottom-full {
+                grid-column: span 1;
+            }
+        }
+
+        /* 各群組不同的顏色邊框，增加辨識度 */
         .group-box.top-left { border-top: 5px solid #3498db; }
         .group-box.top-right { border-top: 5px solid #2ecc71; }
         .group-box.bottom-left { border-top: 5px solid #9b59b6; }
         .group-box.bottom-right { border-top: 5px solid #e67e22; }
 
         .group-title {
-            margin: 0 0 15px 0;
-            font-size: 1.2em;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
             color: #4a5568;
             font-weight: bold;
             text-align: left;
@@ -67,19 +78,19 @@
         .timer-cluster {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
             justify-content: flex-start;
         }
 
-        /* 計時器卡片樣式 */
+        /* 計時器卡片樣式 - 高度調降 10% 且結構緊湊化 */
         .timer-card {
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            padding: 15px;
-            width: calc(50% - 8px); /* 預設一排兩卡 */
-            min-width: 240px;
-            min-height: 180px;
+            padding: 10px 12px;
+            width: calc(50% - 6px); /* 預設一排兩卡 */
+            min-width: 230px;
+            min-height: 140px; /* 已調降高度，防止出現捲軸 */
             text-align: center;
             transition: transform 0.2s, background-color 0.3s;
             border: 2px solid #e2e8f0;
@@ -108,13 +119,13 @@
             display: none;
         }
 
-        h3 { margin: 0 0 8px 0; font-size: 1.2em; color: #2d3748; }
-        .input-group { display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 12px; }
-        input[type="number"] { width: 65px; font-size: 24px; text-align: center; border: 2px solid #cbd5e1; border-radius: 6px; padding: 3px; }
-        .display { font-size: 45px; font-weight: bold; font-family: 'Courier New', Courier, monospace; margin: 5px 0; color: #dc2626; }
+        h3 { margin: 0 0 6px 0; font-size: 1.15em; color: #2d3748; }
+        .input-group { display: flex; justify-content: center; align-items: center; gap: 5px; margin-bottom: 8px; }
+        input[type="number"] { width: 60px; font-size: 22px; text-align: center; border: 2px solid #cbd5e1; border-radius: 6px; padding: 2px; }
+        .display { font-size: 40px; font-weight: bold; font-family: 'Courier New', Courier, monospace; margin: 2px 0; color: #dc2626; }
         
         /* 按鈕 */
-        .btn { padding: 8px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 5px; transition: 0.1s; }
+        .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; margin-top: 3px; transition: 0.1s; }
         .btn-start { background-color: #2ecc71; color: white; }
         .btn-stop { background-color: #718096; color: white; }
         .btn-test { background-color: #3498db; color: white; font-size: 14px; padding: 5px 12px; margin-top: 0; }
@@ -162,20 +173,25 @@
         <div class="group-title">↘️ 右下群組</div>
         <div class="timer-cluster" id="cluster-br"></div>
     </div>
+
+    <div class="group-box bottom-full">
+        <div class="group-title">🌊 環河</div>
+        <div class="timer-cluster" id="cluster-bh"></div>
+    </div>
 </div>
 
 <audio id="alert-sound" src="1.mp3"></audio>
 
 <script>
-    // 定義四大群組的名稱資料
     const groupConfigs = {
         tl: { elId: "cluster-tl", names: ["浪極光", "勞動檢處", "聖天宮"] },
         tr: { elId: "cluster-tr", names: ["拱門天橋", "郵局", "鎮天宮", "welcome"] },
         bl: { elId: "cluster-bl", names: ["溪頭公園", "公園石碑", "水仙香爐"] },
-        br: { elId: "cluster-br", names: ["潮和宮", "昇陽", "紀念碑文"] }
+        br: { elId: "cluster-br", names: ["潮和宮", "昇陽", "紀念碑文"] },
+        bh: { elId: "cluster-bh", names: ["滑水道", "熱氣球"] }
     };
 
-    let timers = {}; // 用全域 ID 作為 key 的主數據庫
+    let timers = {}; 
     let soundEnabled = localStorage.getItem('timer_sound_enabled') === 'true';
     
     document.getElementById('sound-toggle').checked = soundEnabled;
@@ -211,7 +227,7 @@
         if ("vibrate" in navigator) navigator.vibrate(1000);
     }
 
-    // 初始化與建立所有計時卡片
+    // 初始化建立卡片
     let globalIdCounter = 0;
     
     for (let groupKey in groupConfigs) {
@@ -221,7 +237,6 @@
         config.names.forEach((name) => {
             const currentId = globalIdCounter++;
             
-            // 使用「群組前綴+名字」作為儲存 key，避免未來增刪名字時抓錯資料
             const storageKeyInput = `g_input_${groupKey}_${name}`;
             const storageKeyEndTime = `g_endtime_${groupKey}_${name}`;
 
@@ -320,7 +335,6 @@
         sortCluster(timers[id].groupKey);
     }
 
-    // 區域獨立排序：只排序該群組內部的卡片
     function sortCluster(groupKey) {
         const config = groupConfigs[groupKey];
         const clusterContainer = document.getElementById(config.elId);
@@ -347,11 +361,9 @@
             minInp.addEventListener('keypress', handleEnter);
             secInp.addEventListener('keypress', handleEnter);
         }
-        // 初始將四個群組各自排序一次
         for (let groupKey in groupConfigs) { sortCluster(groupKey); }
     };
 
-    // 主循環計時器
     setInterval(() => {
         const now = Date.now();
         let shortest = null;
@@ -392,10 +404,7 @@
             }
         }
         
-        // 有變更的群組才進行內部重排
         updatedGroups.forEach(groupKey => sortCluster(groupKey));
-        
-        // 更新網頁標題
         document.title = shortest ? `${Math.floor(shortest.remaining/60)}:${String(shortest.remaining%60).padStart(2,'0')} - ${shortest.name}` : "精準倒計時器";
     }, 500);
 </script>
